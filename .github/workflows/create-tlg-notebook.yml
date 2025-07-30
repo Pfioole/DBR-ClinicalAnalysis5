@@ -53,4 +53,4 @@ jobs:
         run: |
           git add programs/
           git commit -m "📘 Add notebook for ${{ github.event.issue.title }}" || echo "Nothing to commit"
-          git push "https://x-access-token:$GH_PAT@github.com/${{ git_
+          git push "https://x-access-token:$GH_PAT@github.com/${{ github.repository }}" main
