@@ -23,6 +23,8 @@ jobs:
       - name: Stop early if no 'tlg' label
         if: steps.check_label.outputs.has_tlg != 'true'
         run: echo "Issue doesn't have 'tlg' label. Skipping."
+        continue-on-error: true
+
 
       - name: Checkout repository
         if: env.MATCHED == 'true'
