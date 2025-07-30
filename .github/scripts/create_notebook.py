@@ -2,7 +2,6 @@ import nbformat
 import sys
 import os
 import re
-import yaml
 
 title = sys.argv[1]
 body = sys.argv[2]
@@ -16,15 +15,17 @@ if not match:
 tlg_id = match.group(1).strip()
 tlg_title = match.group(2).strip()
 
-# Extract type from issue body
+# Extract type
 type_match = re.search(r"### Type\s*\n(.+)", body)
-if not type_match:
-    print("❌ Could not extract TLG type (Table/Listing/Figure).")
-    sys.exit(1)
+tlg_type = type_match.group(1).strip().lower() if type_match else "misc"
 
-tlg_type = type_match.group(1).strip().lower()
+# Extract programmer and reviewer
+prog_match = re.search(r"### Programmer GitHub handle\s*\n(.+)", body)
+qc_match = re.search(r"### QC Reviewer GitHub handle\s*\n(.+)", body)
+programmer = prog_match.group(1).strip() if prog_match else "N/A"
+qc_reviewer = qc_match.group(1).strip() if qc_match else "N/A"
 
-# Decide subdirectory
+# Determine subfolder
 if "table" in tlg_type:
     subfolder = "tables"
 elif "listing" in tlg_type:
@@ -34,14 +35,24 @@ elif "figure" in tlg_type:
 else:
     subfolder = "misc"
 
-# Define path
+# File path
 folder_path = f"programs/tfl/{subfolder}"
 os.makedirs(folder_path, exist_ok=True)
-notebook_path = f"{folder_path}/{tlg_id}_{tlg_title.replace(' ', '_')}.ipynb"
+safe_title = re.sub(r'[^\w\d_-]', '_', tlg_title)
+notebook_path = f"{folder_path}/{tlg_id}_{safe_title}.ipynb"
 
-# Create notebook
-nb = nbformat.v4.new_notebook()
-nb.cells.append(nbformat.v4.new_markdown_cell(f"# {tlg_title}\n\n**TLG ID:** {tlg_id}\n**Type:** {tlg_type.title()}"))
+# Load template
+template_path = ".github/scripts/tlg_notebook_template.ipynb"
+nb = nbformat.read(template_path, as_version=4)
+
+# Replace placeholders in first markdown cell
+for cell in nb.cells:
+    if cell.cell_type == "markdown":
+        cell.source = cell.source.replace("{{TLG_ID}}", tlg_id)
+        cell.source = cell.source.replace("{{TITLE}}", tlg_title)
+        cell.source = cell.source.replace("{{PROGRAMMER}}", f"@{programmer}")
+        cell.source = cell.source.replace("{{QC_REVIEWER}}", f"@{qc_reviewer}")
+
+# Write final notebook
 nbformat.write(nb, notebook_path)
-
-print(f"✅ Notebook created at: {notebook_path}")
+print(f"✅ Created notebook at {notebook_path}")
