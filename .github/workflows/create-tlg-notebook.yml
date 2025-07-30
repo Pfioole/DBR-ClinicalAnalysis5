@@ -6,55 +6,34 @@ on:
 
 jobs:
   create-notebook:
+    if: github.event.label.name == 'tlg'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check for 'tlg' label
-        id: check_label
-        run: |
-          echo "Checking for 'tlg' label..."
-          if echo "${{ toJson(github.event.issue.labels) }}" | grep -q '"name":"tlg"'; then
-            echo "has_tlg=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_tlg=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Stop early if no 'tlg' label
-        if: steps.check_label.outputs.has_tlg != 'true'
-        run: |
-          echo "Issue doesn't have 'tlg' label. Skipping."
-        continue-on-error: true
-
       - name: Checkout repository
-        if: steps.check_label.outputs.has_tlg == 'true'
         uses: actions/checkout@v3
         with:
           token: ${{ secrets.GH_PAT }}
           ref: main
 
       - name: Set up Python
-        if: steps.check_label.outputs.has_tlg == 'true'
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
       - name: Install dependencies
-        if: steps.check_label.outputs.has_tlg == 'true'
         run: pip install nbformat PyYAML
 
       - name: Generate notebook from template
-        if: steps.check_label.outputs.has_tlg == 'true'
         run: |
           python .github/scripts/create_notebook.py "${{ github.event.issue.title }}" "${{ github.event.issue.body }}"
 
       - name: Configure Git identity
-        if: steps.check_label.outputs.has_tlg == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Commit and push to main using PAT
-        if: steps.check_label.outputs.has_tlg == 'true'
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
