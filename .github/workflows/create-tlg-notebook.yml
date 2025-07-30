@@ -2,7 +2,7 @@ name: Create TLG Notebook from Issue
 
 on:
   issues:
-    types: [labeled]
+    types: [opened, labeled]
 
 jobs:
   create-notebook:
@@ -10,6 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Exit if 'tlg' label is not present
+        run: |
+          echo "Checking for 'tlg' label..."
+          echo "${{ toJson(github.event.issue.labels) }}" | grep -q '"name":"tlg"' || exit 0
+      
       - name: Checkout repo
         uses: actions/checkout@v3
 
