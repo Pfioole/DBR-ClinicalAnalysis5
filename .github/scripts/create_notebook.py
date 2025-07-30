@@ -1,36 +1,47 @@
+import nbformat
 import sys
 import os
 import re
-import nbformat
-from nbformat.v4 import new_notebook, new_markdown_cell, new_code_cell
+import yaml
 
 title = sys.argv[1]
 body = sys.argv[2]
 
+# Extract TLG ID and title
 match = re.match(r"\[TLG\]\s*-\s*(.*?)\s*-\s*(.*)", title)
 if not match:
-    print("⚠️ Issue title format must be: [TLG] - <TLG_ID> - <Title>")
+    print("❌ Title must follow format: [TLG] - <ID> - <Title>")
     sys.exit(1)
+
 tlg_id = match.group(1).strip()
 tlg_title = match.group(2).strip()
 
-def extract(label):
-    m = re.search(rf"\*\*{label}\*\*:\s*@?(\w+)", body)
-    return m.group(1) if m else ""
+# Extract type from issue body
+type_match = re.search(r"### Type\s*\n(.+)", body)
+if not type_match:
+    print("❌ Could not extract TLG type (Table/Listing/Figure).")
+    sys.exit(1)
 
-programmer = extract("Programmer")
-qc = extract("QC Reviewer")
+tlg_type = type_match.group(1).strip().lower()
 
-folder = "programs/misc"
-filename = f"{folder}/{tlg_id.replace('.', '_')}_{tlg_title.replace(' ', '_')}.ipynb"
-os.makedirs(folder, exist_ok=True)
+# Decide subdirectory
+if "table" in tlg_type:
+    subfolder = "tables"
+elif "listing" in tlg_type:
+    subfolder = "listings"
+elif "figure" in tlg_type:
+    subfolder = "figures"
+else:
+    subfolder = "misc"
 
-nb = new_notebook(cells=[
-    new_markdown_cell(f"# 📊 TLG Notebook\n- **TLG ID**: {tlg_id}\n- **Title**: {tlg_title}\n- **Programmer**: @{programmer}\n- **QC Reviewer**: @{qc}"),
-    new_code_cell("# Start your analysis\n# spark.read.format('delta').table('adam.adsl')")
-])
+# Define path
+folder_path = f"programs/tfl/{subfolder}"
+os.makedirs(folder_path, exist_ok=True)
+notebook_path = f"{folder_path}/{tlg_id}_{tlg_title.replace(' ', '_')}.ipynb"
 
-with open(filename, 'w') as f:
-    nbformat.write(nb, f)
-print(f"Notebook created: {filename}")
+# Create notebook
+nb = nbformat.v4.new_notebook()
+nb.cells.append(nbformat.v4.new_markdown_cell(f"# {tlg_title}\n\n**TLG ID:** {tlg_id}\n**Type:** {tlg_type.title()}"))
+nbformat.write(nb, notebook_path)
 
+print(f"✅ Notebook created at: {notebook_path}")
