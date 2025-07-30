@@ -10,44 +10,46 @@ jobs:
 
     steps:
       - name: Exit if 'tlg' label is not present
-        id: label-check
+        id: check_label
         run: |
-          echo "LABELS=${{ toJson(github.event.issue.labels) }}"
           echo "${{ toJson(github.event.issue.labels) }}" | grep -q '"name":"tlg"' && echo "MATCHED=true" >> $GITHUB_ENV || echo "MATCHED=false" >> $GITHUB_ENV
 
-      - name: Abort if label check failed
+      - name: Stop early if no 'tlg' label
         if: env.MATCHED != 'true'
-        run: |
-          echo "No 'tlg' label found, skipping notebook generation."
-          exit 0
+        run: echo "Issue doesn't have the 'tlg' label. Skipping."
 
       - name: Checkout repository
+        if: env.MATCHED == 'true'
         uses: actions/checkout@v3
 
       - name: Set up Python
+        if: env.MATCHED == 'true'
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
       - name: Install dependencies
+        if: env.MATCHED == 'true'
         run: pip install nbformat PyYAML
 
       - name: Generate notebook from template
+        if: env.MATCHED == 'true'
         run: |
           python .github/scripts/create_notebook.py "${{ github.event.issue.title }}" "${{ github.event.issue.body }}"
 
       - name: Configure Git identity
+        if: env.MATCHED == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Push notebook using PAT
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+      - name: Push to new branch using PAT
+        if: env.MATCHED == 'true'
         run: |
           BRANCH="autogen/tlg-${{ github.event.issue.number }}"
           git checkout -b $BRANCH
           git add programs/
           git commit -m "📘 Add notebook for ${{ github.event.issue.title }}" || echo "Nothing to commit"
-          echo "Pushing with authenticated URL..."
-          git push https://x-access-token:$GH_PAT@github.com/${{ github.repository }} $BRANCH
+          
+          # Push using token directly in the command
+          git push "https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}" $BRANCH
