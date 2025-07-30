@@ -9,14 +9,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Exit if 'tlg' label is not present
         id: check_label
         run: |
-          echo "${{ toJson(github.event.issue.labels) }}" | grep -q '"name":"tlg"' && echo "MATCHED=true" >> $GITHUB_ENV || echo "MATCHED=false" >> $GITHUB_ENV
+          echo "Checking for label 'tlg'..."
+          if echo "${{ toJson(github.event.issue.labels) }}" | grep -q '"name":"tlg"'; then
+            echo "has_tlg=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_tlg=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Stop early if no 'tlg' label
-        if: env.MATCHED != 'true'
-        run: echo "Issue doesn't have the 'tlg' label. Skipping."
+        if: steps.check_label.outputs.has_tlg != 'true'
+        run: echo "Issue doesn't have 'tlg' label. Skipping."
 
       - name: Checkout repository
         if: env.MATCHED == 'true'
