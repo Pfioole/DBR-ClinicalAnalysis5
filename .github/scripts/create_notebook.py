@@ -42,7 +42,10 @@ safe_title = re.sub(r'[^\w\d_-]', '_', tlg_title)
 notebook_path = f"{folder_path}/{tlg_id}_{safe_title}.ipynb"
 
 # Load template
-template_path = ".github/scripts/tlg_notebook_template.ipynb"
+if not os.path.exists(template_path):
+    print(f"❌ Template not found at {template_path}")
+    sys.exit(1)
+template_path = "templates/tlg_notebook_template.ipynb"
 nb = nbformat.read(template_path, as_version=4)
 
 # Replace placeholders in first markdown cell
