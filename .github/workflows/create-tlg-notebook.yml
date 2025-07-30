@@ -1,1 +1,42 @@
+name: Create TLG Notebook from Issue
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  create-notebook:
+    if: contains(github.event.issue.labels.*.name, 'tlg')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install nbformat PyYAML
+
+      - name: Generate notebook
+        run: python .github/scripts/create_notebook.py "${{ github.event.issue.title }}" "${{ github.event.issue.body }}"
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Push to branch
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          BRANCH="autogen/tlg-${{ github.event.issue.number }}"
+          git checkout -b $BRANCH
+          git add programs/
+          git commit -m "📘 Add notebook for ${{ github.event.issue.title }}" || echo "Nothing to commit"
+          git remote set-url origin "https://x-access-token:$GH_PAT@github.com/${{ github.repository }}"
+          git push origin $BRANCH
 
