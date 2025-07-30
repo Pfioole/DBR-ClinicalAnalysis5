@@ -21,6 +21,9 @@ jobs:
       - name: Checkout repository
         if: env.MATCHED == 'true'
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GH_PAT }}
+          ref: main  # ensure we check out and push to main directly
 
       - name: Set up Python
         if: env.MATCHED == 'true'
@@ -43,13 +46,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Push to new branch using PAT
+      - name: Commit and push to main using PAT
         if: env.MATCHED == 'true'
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          BRANCH="autogen/tlg-${{ github.event.issue.number }}"
-          git checkout -b $BRANCH
           git add programs/
           git commit -m "📘 Add notebook for ${{ github.event.issue.title }}" || echo "Nothing to commit"
-          
-          # Push using token directly in the command
-          git push "https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }}" $BRANCH
+          git push "https://x-access-token:$GH_PAT@github.com/${{ git_
