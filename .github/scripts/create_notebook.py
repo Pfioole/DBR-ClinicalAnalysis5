@@ -8,6 +8,9 @@ title = sys.argv[1]
 body = sys.argv[2]
 
 match = re.match(r"\[TLG\]\s*-\s*(.*?)\s*-\s*(.*)", title)
+if not match:
+    print("⚠️ Issue title format must be: [TLG] - <TLG_ID> - <Title>")
+    sys.exit(1)
 tlg_id = match.group(1).strip()
 tlg_title = match.group(2).strip()
 
